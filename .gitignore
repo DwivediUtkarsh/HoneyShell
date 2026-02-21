@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment — never commit real credentials
+.env
+
+# Host RSA key — rotating this breaks returning attackers' host verification
+proxy/keys/*
+!proxy/keys/.gitkeep
+
+# Editor
+.DS_Store
+*.log
+.idea/
+.vscode/
