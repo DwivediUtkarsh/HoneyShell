@@ -34,6 +34,13 @@ async def create_session(
     return session_id
 
 
+async def update_session_container(session_id: str, container_id: str) -> None:
+    await get_db().sessions.update_one(
+        {"session_id": session_id},
+        {"$set": {"container_id": container_id}},
+    )
+
+
 async def end_session(session_id: str) -> None:
     now = datetime.now(timezone.utc)
 

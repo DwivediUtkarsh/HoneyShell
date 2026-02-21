@@ -1,5 +1,5 @@
-# Phase 1: only MongoDB is containerised.
-# The proxy runs directly on the host (make run) for fast iteration.
+# Phase 1-2: MongoDB is containerised; proxy runs directly on the host.
+
 # Phase 5 will add proxy + api + nginx services here.
 
 services:
@@ -11,8 +11,6 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      # No auth on the local dev instance — add MONGO_INITDB_ROOT_USERNAME/PASSWORD
-      # before exposing this to any network other than localhost.
       MONGO_INITDB_DATABASE: honeyshell
 
 volumes:

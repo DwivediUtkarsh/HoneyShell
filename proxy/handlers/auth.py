@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Callable
 
 import paramiko
 
@@ -14,6 +15,8 @@ class HoneypotServerInterface(paramiko.ServerInterface):
         self.client_ip: str = client_addr[0]
         self.client_port: int = client_addr[1]
         self._session_future: asyncio.Future | None = None
+        self.exec_command: bytes | None = None
+        self._resize_callback: Callable[[int, int], None] | None = None
 
     def get_allowed_auths(self, username: str) -> str:
         return "password,publickey"
@@ -54,10 +57,20 @@ class HoneypotServerInterface(paramiko.ServerInterface):
     ) -> bool:
         return True
 
+    def check_channel_window_change_request(
+        self, channel: paramiko.Channel,
+        width: int, height: int,
+        pixelwidth: int, pixelheight: int,
+    ) -> bool:
+        if self._resize_callback:
+            self._resize_callback(width, height)
+        return True
+
     def check_channel_shell_request(self, channel: paramiko.Channel) -> bool:
         return True
 
     def check_channel_exec_request(self, channel: paramiko.Channel, command: bytes) -> bool:
+        self.exec_command = command
         return True
 
     def check_channel_subsystem_request(self, channel: paramiko.Channel, name: str) -> bool:

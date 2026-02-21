@@ -7,6 +7,7 @@ import paramiko
 from dotenv import load_dotenv
 
 import storage.database as db
+import orchestrator.manager as manager
 from proxy.handlers.auth import HoneypotServerInterface
 from proxy.handlers.shell import handle_channel
 
@@ -65,6 +66,7 @@ def _handle_connection(
 
 def main() -> None:
     db.init()
+    manager.init()
     host_key = _load_host_key()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

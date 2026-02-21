@@ -1,0 +1,6 @@
+127.0.0.1 localhost
+127.0.1.1 web-prod-01
+
+10.0.1.10 db-internal db
+10.0.1.11 redis-internal redis
+10.0.1.12 api-internal api
