@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import storage.database as db
 import orchestrator.manager as manager
 from proxy.handlers.auth import HoneypotServerInterface
+from proxy.handlers.sftp import HoneypotSFTPServerInterface
 from proxy.handlers.shell import handle_channel
 
 load_dotenv()
@@ -46,6 +47,7 @@ def _handle_connection(
     transport.local_version = os.getenv("SSH_BANNER", "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6")
 
     server_iface = HoneypotServerInterface(client_addr)
+    transport.set_subsystem_handler("sftp", paramiko.SFTPServer, HoneypotSFTPServerInterface)
 
     try:
         transport.start_server(server=server_iface)

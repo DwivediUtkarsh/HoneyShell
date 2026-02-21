@@ -16,6 +16,7 @@ class HoneypotServerInterface(paramiko.ServerInterface):
         self.client_port: int = client_addr[1]
         self._session_future: asyncio.Future | None = None
         self.exec_command: bytes | None = None
+        self.sftp_subsystem: bool = False
         self._resize_callback: Callable[[int, int], None] | None = None
 
     def get_allowed_auths(self, username: str) -> str:
@@ -74,4 +75,7 @@ class HoneypotServerInterface(paramiko.ServerInterface):
         return True
 
     def check_channel_subsystem_request(self, channel: paramiko.Channel, name: str) -> bool:
-        return name == "sftp"
+        if name == "sftp":
+            self.sftp_subsystem = True
+            return True
+        return False

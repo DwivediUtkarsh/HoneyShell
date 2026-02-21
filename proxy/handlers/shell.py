@@ -7,6 +7,7 @@ import paramiko
 
 import orchestrator.manager as manager
 import storage.database as db
+from capture import tty_recorder
 from storage.models import end_session, update_session_container
 from proxy.handlers.auth import HoneypotServerInterface
 
@@ -26,14 +27,15 @@ def handle_channel(channel: paramiko.Channel, server_iface: HoneypotServerInterf
         if session_id is None:
             return
 
-        container_id = manager.create_session_container(session_id)
-
-        asyncio.run_coroutine_threadsafe(
-            update_session_container(session_id, container_id),
-            db.get_loop(),
-        ).result(timeout=_DB_WRITE_TIMEOUT_S)
-
-        _bridge(channel, server_iface, container_id)
+        if getattr(server_iface, "sftp_subsystem", False):
+            _wait_for_close(channel)
+        else:
+            container_id = manager.create_session_container(session_id)
+            asyncio.run_coroutine_threadsafe(
+                update_session_container(session_id, container_id),
+                db.get_loop(),
+            ).result(timeout=_DB_WRITE_TIMEOUT_S)
+            _bridge(channel, server_iface, container_id, session_id)
 
     except Exception:
         log.exception(f"Error in channel handler (session={session_id!r})")
@@ -58,10 +60,21 @@ def _resolve_session_id(server_iface: HoneypotServerInterface) -> str | None:
         return None
 
 
+def _wait_for_close(channel: paramiko.Channel) -> None:
+    transport = channel.get_transport()
+    while True:
+        if channel.closed:
+            break
+        if transport is None or not transport.is_active():
+            break
+        time.sleep(0.1)
+
+
 def _bridge(
     channel: paramiko.Channel,
     server_iface: HoneypotServerInterface,
     container_id: str,
+    session_id: str,
 ) -> None:
     if server_iface.exec_command:
         command = ["sh", "-c", server_iface.exec_command.decode("utf-8", errors="replace")]
@@ -72,7 +85,6 @@ def _bridge(
 
     exec_id, sock = manager.open_exec(container_id, command, tty=tty)
 
-    # sock is socket.SocketIO; ._sock is the underlying bidirectional socket
     raw = sock._sock
     raw.setblocking(True)
 
@@ -88,6 +100,7 @@ def _bridge(
                     if not data:
                         break
                     raw.sendall(data)
+                    tty_recorder.log_keystroke(session_id, data, "input")
                 elif channel.closed:
                     break
                 else:
@@ -104,6 +117,7 @@ def _bridge(
                 if not data:
                     break
                 channel.send(data)
+                tty_recorder.log_keystroke(session_id, data, "output")
         except Exception:
             pass
         finally:

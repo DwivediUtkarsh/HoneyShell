@@ -25,3 +25,6 @@ test:
 
 test-phase2:
 	.venv/bin/python tests/test_phase2.py
+
+test-phase3:
+	.venv/bin/python tests/test_phase3.py
